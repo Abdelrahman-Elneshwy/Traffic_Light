@@ -373,37 +373,41 @@ void SN_Crossing_Task(void *argument)
 {
   /* USER CODE BEGIN SN_Crossing_Task */
   /* Infinite loop */
+	uint16_t msg=0;
   for(;;)
   {
-	  if (TEST == S_N)
+	  if(osMessageQueueGet(SN_STATEHandle, &msg, 0,osWaitForever)==osOK)
 	  {
-		/* North-South pedestrian crossing */
-		osThreadSuspend(Traffic_controlHandle);
+		  if (msg == S_N)
+			  {
+				/* North-South pedestrian crossing */
+				osThreadSuspend(Traffic_controlHandle);
 
-		HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_RESET);
 
-		HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
-		osDelay(5000);
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-		osDelay(1000);
+				HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
+				osDelay(5000);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+				osDelay(1000);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
+				osDelay(1000);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+				osDelay(1000);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
+				osDelay(1000);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+				osDelay(1000);
 
 
-		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_SET);
-		TEST = 0;
-		osThreadResume(Traffic_controlHandle);
+				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_SET);
+				osThreadResume(Traffic_controlHandle);
+			  }
 	  }
+
 
 	  osDelay(100);
   }
@@ -421,7 +425,7 @@ void Button_Interrupt(void *argument)
 {
 	uint32_t last_tick = osKernelGetTickCount();
 	    const uint32_t debounce_time = 50; // Debounce time in milliseconds
-
+	    uint16_t msg = 0;
 	    for (;;)
 	    {
 	        // Check North-South button
@@ -434,8 +438,8 @@ void Button_Interrupt(void *argument)
 	                printf("North-South button pressed!\n");
 
 	                // Create and send a message for North-South pedestrian crossing
-	                TEST = 10;
-
+	                msg = S_N;
+	                osMessageQueuePut(SN_STATEHandle, &msg, 0, osWaitForever);
 	                last_tick = osKernelGetTickCount(); // Update last tick for debouncing
 	            }
 	        }
@@ -449,7 +453,8 @@ void Button_Interrupt(void *argument)
 	                printf("West-East button pressed!\n");
 
 	                // Create and send a message for West-East pedestrian crossing
-	                TEST =20;
+	                msg =W_E;
+	                osMessageQueuePut(SN_STATEHandle, &msg, 0, osWaitForever);
 
 	                last_tick = osKernelGetTickCount(); // Update last tick for debouncing
 	            }
@@ -471,37 +476,41 @@ void WE_Crossing_Task(void *argument)
 {
   /* USER CODE BEGIN WE_Crossing_Task */
   /* Infinite loop */
+	uint16_t msg=0;
   for(;;)
   {
-	  if (TEST == W_E)
+	  if(osMessageQueueGet(SN_STATEHandle, &msg, 0,osWaitForever)==osOK)
 	  {
-		/* North-South pedestrian crossing */
-		osThreadSuspend(Traffic_controlHandle);
+		  if (msg == W_E)
+		  	  {
+		  		/* North-South pedestrian crossing */
+		  		osThreadSuspend(Traffic_controlHandle);
 
-		HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
+		  		HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_SET);
+		  		HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
+		  		HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
 
-		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
-		osDelay(5000);
+		  		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_RESET);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
+		  		osDelay(5000);
 
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
-		osDelay(1000);
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
-		osDelay(1000);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		  		osDelay(1000);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
+		  		osDelay(1000);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		  		osDelay(1000);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
+		  		osDelay(1000);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		  		osDelay(1000);
 
-		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_SET);
-		TEST = 0;
-		osThreadResume(Traffic_controlHandle);
+		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		  		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_SET);
+		  		osThreadResume(Traffic_controlHandle);
+		  	  }
 	  }
+
 
 	  osDelay(100);
   }
