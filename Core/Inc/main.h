@@ -85,7 +85,13 @@ void Error_Handler(void);
 #define S_N		(uint16_t)10
 #define W_E		(uint16_t)20
 /* USER CODE BEGIN Private defines */
+#define GREEN_LED_ON 		8000
+#define YELLOW_LED_ON 		2000
 
+#define PedestrainMove_LED_ON 	5000
+#define PedestrainMove_LED_Flashing 	1000
+
+#define Debounce_Delay 50
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
