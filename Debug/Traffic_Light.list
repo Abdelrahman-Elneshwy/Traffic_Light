@@ -39,13 +39,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  17 .debug_line   00013d42  00000000  00000000  00025ebf  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    00097e1a  00000000  00000000  00039c01  2**0
+ 18 .debug_str    00097e8d  00000000  00000000  00039c01  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  000d1a1b  2**0
+ 19 .comment      00000043  00000000  00000000  000d1a8e  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000053a0  00000000  00000000  000d1a60  2**2
+ 20 .debug_frame  000053a0  00000000  00000000  000d1ad4  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000058  00000000  00000000  000d6e00  2**0
+ 21 .debug_line_str 00000058  00000000  00000000  000d6e74  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -847,7 +847,7 @@ void Traffic_Light_Control(void *argument)
  80007c4:	2102      	movs	r1, #2
  80007c6:	482c      	ldr	r0, [pc, #176]	@ (8000878 <Traffic_Light_Control+0x118>)
  80007c8:	f000 fe30 	bl	800142c <HAL_GPIO_WritePin>
-	       osDelay(8000);
+	       osDelay(GREEN_LED_ON);
  80007cc:	f44f 50fa 	mov.w	r0, #8000	@ 0x1f40
  80007d0:	f001 fea7 	bl	8002522 <osDelay>
 
@@ -867,7 +867,7 @@ void Traffic_Light_Control(void *argument)
  80007ea:	2104      	movs	r1, #4
  80007ec:	4821      	ldr	r0, [pc, #132]	@ (8000874 <Traffic_Light_Control+0x114>)
  80007ee:	f000 fe1d 	bl	800142c <HAL_GPIO_WritePin>
-	       osDelay(2000);
+	       osDelay(YELLOW_LED_ON);
  80007f2:	f44f 60fa 	mov.w	r0, #2000	@ 0x7d0
  80007f6:	f001 fe94 	bl	8002522 <osDelay>
 
@@ -902,7 +902,7 @@ void Traffic_Light_Control(void *argument)
  800082e:	2104      	movs	r1, #4
  8000830:	4811      	ldr	r0, [pc, #68]	@ (8000878 <Traffic_Light_Control+0x118>)
  8000832:	f000 fdfb 	bl	800142c <HAL_GPIO_WritePin>
-	       osDelay(8000);
+	       osDelay(GREEN_LED_ON);
  8000836:	f44f 50fa 	mov.w	r0, #8000	@ 0x1f40
  800083a:	f001 fe72 	bl	8002522 <osDelay>
 
@@ -922,7 +922,7 @@ void Traffic_Light_Control(void *argument)
  8000854:	2104      	movs	r1, #4
  8000856:	4808      	ldr	r0, [pc, #32]	@ (8000878 <Traffic_Light_Control+0x118>)
  8000858:	f000 fde8 	bl	800142c <HAL_GPIO_WritePin>
-	       osDelay(2000);
+	       osDelay(YELLOW_LED_ON);
  800085c:	f44f 60fa 	mov.w	r0, #2000	@ 0x7d0
  8000860:	f001 fe5f 	bl	8002522 <osDelay>
 
@@ -994,6 +994,7 @@ void SN_Crossing_Task(void *argument)
  80008c8:	482a      	ldr	r0, [pc, #168]	@ (8000974 <SN_Crossing_Task+0xf8>)
  80008ca:	f000 fdaf 	bl	800142c <HAL_GPIO_WritePin>
 
+				//Active move led for pedestrain for 5 second then start flashing
 				HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_RESET);
  80008ce:	2200      	movs	r2, #0
  80008d0:	2120      	movs	r1, #32
@@ -1004,7 +1005,7 @@ void SN_Crossing_Task(void *argument)
  80008da:	2110      	movs	r1, #16
  80008dc:	4825      	ldr	r0, [pc, #148]	@ (8000974 <SN_Crossing_Task+0xf8>)
  80008de:	f000 fda5 	bl	800142c <HAL_GPIO_WritePin>
-				osDelay(5000);
+				osDelay(PedestrainMove_LED_ON);
  80008e2:	f241 3088 	movw	r0, #5000	@ 0x1388
  80008e6:	f001 fe1c 	bl	8002522 <osDelay>
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
@@ -1012,7 +1013,7 @@ void SN_Crossing_Task(void *argument)
  80008ec:	2110      	movs	r1, #16
  80008ee:	4821      	ldr	r0, [pc, #132]	@ (8000974 <SN_Crossing_Task+0xf8>)
  80008f0:	f000 fd9c 	bl	800142c <HAL_GPIO_WritePin>
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
  80008f4:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
  80008f8:	f001 fe13 	bl	8002522 <osDelay>
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
@@ -1020,7 +1021,7 @@ void SN_Crossing_Task(void *argument)
  80008fe:	2110      	movs	r1, #16
  8000900:	481c      	ldr	r0, [pc, #112]	@ (8000974 <SN_Crossing_Task+0xf8>)
  8000902:	f000 fd93 	bl	800142c <HAL_GPIO_WritePin>
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
  8000906:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
  800090a:	f001 fe0a 	bl	8002522 <osDelay>
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
@@ -1028,7 +1029,7 @@ void SN_Crossing_Task(void *argument)
  8000910:	2110      	movs	r1, #16
  8000912:	4818      	ldr	r0, [pc, #96]	@ (8000974 <SN_Crossing_Task+0xf8>)
  8000914:	f000 fd8a 	bl	800142c <HAL_GPIO_WritePin>
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
  8000918:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
  800091c:	f001 fe01 	bl	8002522 <osDelay>
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
@@ -1036,7 +1037,7 @@ void SN_Crossing_Task(void *argument)
  8000922:	2110      	movs	r1, #16
  8000924:	4813      	ldr	r0, [pc, #76]	@ (8000974 <SN_Crossing_Task+0xf8>)
  8000926:	f000 fd81 	bl	800142c <HAL_GPIO_WritePin>
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
  800092a:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
  800092e:	f001 fdf8 	bl	8002522 <osDelay>
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
@@ -1044,11 +1045,11 @@ void SN_Crossing_Task(void *argument)
  8000934:	2110      	movs	r1, #16
  8000936:	480f      	ldr	r0, [pc, #60]	@ (8000974 <SN_Crossing_Task+0xf8>)
  8000938:	f000 fd78 	bl	800142c <HAL_GPIO_WritePin>
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
  800093c:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
  8000940:	f001 fdef 	bl	8002522 <osDelay>
 
-
+				//return state of pedestrain Leds to original state
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
  8000944:	2200      	movs	r2, #0
  8000946:	2110      	movs	r1, #16
@@ -1092,7 +1093,7 @@ void Button_Interrupt(void *argument)
 	uint32_t last_tick = osKernelGetTickCount();
  8000980:	f001 fce6 	bl	8002350 <osKernelGetTickCount>
  8000984:	6178      	str	r0, [r7, #20]
-	    const uint32_t debounce_time = 50; // Debounce time in milliseconds
+	    const uint32_t debounce_time = Debounce_Delay; // Debounce time in milliseconds
  8000986:	2332      	movs	r3, #50	@ 0x32
  8000988:	613b      	str	r3, [r7, #16]
 	    uint16_t msg = 0;
@@ -1256,6 +1257,7 @@ void WE_Crossing_Task(void *argument)
  8000a84:	482a      	ldr	r0, [pc, #168]	@ (8000b30 <WE_Crossing_Task+0xf8>)
  8000a86:	f000 fcd1 	bl	800142c <HAL_GPIO_WritePin>
 
+				//Active move led for pedestrain for 5 second then start flashing
 		  		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_RESET);
  8000a8a:	2200      	movs	r2, #0
  8000a8c:	2120      	movs	r1, #32
@@ -1310,7 +1312,7 @@ void WE_Crossing_Task(void *argument)
 		  		osDelay(1000);
  8000af8:	f44f 707a 	mov.w	r0, #1000	@ 0x3e8
  8000afc:	f001 fd11 	bl	8002522 <osDelay>
-
+		  		//return state of pedestrain Leds to original state
 		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
  8000b00:	2200      	movs	r2, #0
  8000b02:	2110      	movs	r1, #16

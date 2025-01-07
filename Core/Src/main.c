@@ -24,7 +24,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
-
+uint16_t TEST = 0;
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -333,13 +333,13 @@ void Traffic_Light_Control(void *argument)
 	       HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_SET);
 	       HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
 	       HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
-	       osDelay(8000);
+	       osDelay(GREEN_LED_ON);
 
 	       /* North-South Yellow, West-East Red */
 	       HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
 	       HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_SET);
 	       HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_RESET);
-	       osDelay(2000);
+	       osDelay(YELLOW_LED_ON);
 
 	       /* North-South Red, West-East Green */
 	       HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_SET);
@@ -348,13 +348,13 @@ void Traffic_Light_Control(void *argument)
 	       HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_SET);
 	       HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
 	       HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_RESET);
-	       osDelay(8000);
+	       osDelay(GREEN_LED_ON);
 
 	       /* North-South Red, West-East Yellow */
 	       HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
 	       HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_SET);
 	       HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_RESET);
-	       osDelay(2000);
+	       osDelay(YELLOW_LED_ON);
 
 	       osSemaphoreRelease(PedestrainStatetHandle);
 	     }
@@ -387,21 +387,22 @@ void SN_Crossing_Task(void *argument)
 				HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_RESET);
 
+				//Active move led for pedestrain for 5 second then start flashing
 				HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
-				osDelay(5000);
+				osDelay(PedestrainMove_LED_ON);
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
-				osDelay(1000);
+				osDelay(PedestrainMove_LED_Flashing);
 
-
+				//return state of pedestrain Leds to original state
 				HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_SET);
 				osThreadResume(Traffic_controlHandle);
@@ -424,7 +425,7 @@ void SN_Crossing_Task(void *argument)
 void Button_Interrupt(void *argument)
 {
 	uint32_t last_tick = osKernelGetTickCount();
-	    const uint32_t debounce_time = 50; // Debounce time in milliseconds
+	    const uint32_t debounce_time = Debounce_Delay; // Debounce time in milliseconds
 	    uint16_t msg = 0;
 	    for (;;)
 	    {
@@ -490,6 +491,7 @@ void WE_Crossing_Task(void *argument)
 		  		HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
 		  		HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
 
+				//Active move led for pedestrain for 5 second then start flashing
 		  		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_RESET);
 		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
 		  		osDelay(5000);
@@ -504,7 +506,7 @@ void WE_Crossing_Task(void *argument)
 		  		osDelay(1000);
 		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
 		  		osDelay(1000);
-
+		  		//return state of pedestrain Leds to original state
 		  		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
 		  		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_SET);
 		  		osThreadResume(Traffic_controlHandle);
