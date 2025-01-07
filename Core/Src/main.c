@@ -24,7 +24,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
-
+uint16_t TEST = 0;
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -41,10 +41,49 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-osThreadId TASK1Handle;
-osThreadId TASK2Handle;
-osThreadId TASK3Handle;
-osSemaphoreId ALLOW_PASSINGHandle;
+/* Definitions for Traffic_control */
+osThreadId_t Traffic_controlHandle;
+const osThreadAttr_t Traffic_control_attributes = {
+  .name = "Traffic_control",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for SN_Crossing */
+osThreadId_t SN_CrossingHandle;
+const osThreadAttr_t SN_Crossing_attributes = {
+  .name = "SN_Crossing",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for interrupt */
+osThreadId_t interruptHandle;
+const osThreadAttr_t interrupt_attributes = {
+  .name = "interrupt",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh1,
+};
+/* Definitions for WE_Crossing */
+osThreadId_t WE_CrossingHandle;
+const osThreadAttr_t WE_Crossing_attributes = {
+  .name = "WE_Crossing",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for SN_STATE */
+osMessageQueueId_t SN_STATEHandle;
+const osMessageQueueAttr_t SN_STATE_attributes = {
+  .name = "SN_STATE"
+};
+/* Definitions for WE_STATE */
+osMessageQueueId_t WE_STATEHandle;
+const osMessageQueueAttr_t WE_STATE_attributes = {
+  .name = "WE_STATE"
+};
+/* Definitions for PedestrainStatet */
+osSemaphoreId_t PedestrainStatetHandle;
+const osSemaphoreAttr_t PedestrainStatet_attributes = {
+  .name = "PedestrainStatet"
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -52,9 +91,10 @@ osSemaphoreId ALLOW_PASSINGHandle;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void trafficLightControlTask(void const * argument);
-void pedestrainCrossingTask(void const * argument);
-void buttonInterruptTask(void const * argument);
+void Traffic_Light_Control(void *argument);
+void SN_Crossing_Task(void *argument);
+void Button_Interrupt(void *argument);
+void WE_Crossing_Task(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -98,14 +138,16 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
+
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
   /* Create the semaphores(s) */
-  /* definition and creation of ALLOW_PASSING */
-  osSemaphoreDef(ALLOW_PASSING);
-  ALLOW_PASSINGHandle = osSemaphoreCreate(osSemaphore(ALLOW_PASSING), 1);
+  /* creation of PedestrainStatet */
+  PedestrainStatetHandle = osSemaphoreNew(1, 1, &PedestrainStatet_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -115,26 +157,37 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of SN_STATE */
+  SN_STATEHandle = osMessageQueueNew (16, sizeof(uint16_t), &SN_STATE_attributes);
+
+  /* creation of WE_STATE */
+  WE_STATEHandle = osMessageQueueNew (16, sizeof(uint16_t), &WE_STATE_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of TASK1 */
-  osThreadDef(TASK1, trafficLightControlTask, osPriorityNormal, 0, 128);
-  TASK1Handle = osThreadCreate(osThread(TASK1), NULL);
+  /* creation of Traffic_control */
+  Traffic_controlHandle = osThreadNew(Traffic_Light_Control, NULL, &Traffic_control_attributes);
 
-  /* definition and creation of TASK2 */
-  osThreadDef(TASK2, pedestrainCrossingTask, osPriorityIdle, 0, 128);
-  TASK2Handle = osThreadCreate(osThread(TASK2), NULL);
+  /* creation of SN_Crossing */
+  SN_CrossingHandle = osThreadNew(SN_Crossing_Task, NULL, &SN_Crossing_attributes);
 
-  /* definition and creation of TASK3 */
-  osThreadDef(TASK3, buttonInterruptTask, osPriorityHigh, 0, 128);
-  TASK3Handle = osThreadCreate(osThread(TASK3), NULL);
+  /* creation of interrupt */
+  interruptHandle = osThreadNew(Button_Interrupt, NULL, &interrupt_attributes);
+
+  /* creation of WE_Crossing */
+  WE_CrossingHandle = osThreadNew(WE_Crossing_Task, NULL, &WE_Crossing_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
   osKernelStart();
@@ -210,42 +263,41 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, G_SN_Pin|Y_SN_Pin|R_SN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, G_SN_Pin|Y_SN_Pin|R_SN_Pin|PedestrainMove_SN_Pin
+                          |PedestrainStop_SN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, G_WE_Pin|Y_WE_Pin|R_WE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, G_WE_Pin|Y_WE_Pin|R_WE_Pin|PedestrainMove_WE_Pin
+                          |PedestrainStop_WE_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : G_SN_Pin Y_SN_Pin R_SN_Pin */
-  GPIO_InitStruct.Pin = G_SN_Pin|Y_SN_Pin|R_SN_Pin;
+  /*Configure GPIO pins : G_SN_Pin Y_SN_Pin R_SN_Pin PedestrainMove_SN_Pin
+                           PedestrainStop_SN_Pin */
+  GPIO_InitStruct.Pin = G_SN_Pin|Y_SN_Pin|R_SN_Pin|PedestrainMove_SN_Pin
+                          |PedestrainStop_SN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PS_NS_Pin */
   GPIO_InitStruct.Pin = PS_NS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(PS_NS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : G_WE_Pin */
-  GPIO_InitStruct.Pin = G_WE_Pin;
+  /*Configure GPIO pins : G_WE_Pin Y_WE_Pin R_WE_Pin PedestrainMove_WE_Pin
+                           PedestrainStop_WE_Pin */
+  GPIO_InitStruct.Pin = G_WE_Pin|Y_WE_Pin|R_WE_Pin|PedestrainMove_WE_Pin
+                          |PedestrainStop_WE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(G_WE_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : Y_WE_Pin R_WE_Pin */
-  GPIO_InitStruct.Pin = Y_WE_Pin|R_WE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PS_WE_Pin */
   GPIO_InitStruct.Pin = PS_WE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(PS_WE_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -256,58 +308,204 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_trafficLightControlTask */
+/* USER CODE BEGIN Header_Traffic_Light_Control */
 /**
-  * @brief  Function implementing the TASK1 thread.
+  * @brief  Function implementing the Traffic_control thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_trafficLightControlTask */
-void trafficLightControlTask(void const * argument)
+/* USER CODE END Header_Traffic_Light_Control */
+void Traffic_Light_Control(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  if (osSemaphoreAcquire(PedestrainStatetHandle, osWaitForever) == osOK)
+	     {
+	       /* North-South Green, West-East Red */
+	       HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_SET);
+	 	   HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_SET);
+
+	       HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
+	       osDelay(8000);
+
+	       /* North-South Yellow, West-East Red */
+	       HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_RESET);
+	       osDelay(2000);
+
+	       /* North-South Red, West-East Green */
+	       HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_RESET);
+	       osDelay(8000);
+
+	       /* North-South Red, West-East Yellow */
+	       HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_RESET);
+	       osDelay(2000);
+
+	       osSemaphoreRelease(PedestrainStatetHandle);
+	     }
   }
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_pedestrainCrossingTask */
+/* USER CODE BEGIN Header_SN_Crossing_Task */
 /**
-* @brief Function implementing the TASK2 thread.
+* @brief Function implementing the SN_Crossing thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_pedestrainCrossingTask */
-void pedestrainCrossingTask(void const * argument)
+/* USER CODE END Header_SN_Crossing_Task */
+void SN_Crossing_Task(void *argument)
 {
-  /* USER CODE BEGIN pedestrainCrossingTask */
+  /* USER CODE BEGIN SN_Crossing_Task */
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  if (TEST == S_N)
+	  {
+		/* North-South pedestrian crossing */
+		osThreadSuspend(Traffic_controlHandle);
+
+		HAL_GPIO_WritePin(GPIOA, R_SN_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA, G_SN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOA, Y_SN_Pin, GPIO_PIN_RESET);
+
+		HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
+		osDelay(5000);
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_SET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+		osDelay(1000);
+
+
+		HAL_GPIO_WritePin(PedestrainMove_SN_GPIO_Port, PedestrainMove_SN_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(PedestrainStop_SN_GPIO_Port, PedestrainStop_SN_Pin, GPIO_PIN_SET);
+		TEST = 0;
+		osThreadResume(Traffic_controlHandle);
+	  }
+
+	  osDelay(100);
   }
-  /* USER CODE END pedestrainCrossingTask */
+  /* USER CODE END SN_Crossing_Task */
 }
 
-/* USER CODE BEGIN Header_buttonInterruptTask */
+/* USER CODE BEGIN Header_Button_Interrupt */
 /**
-* @brief Function implementing the TASK3 thread.
+* @brief Function implementing the interrupt thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_buttonInterruptTask */
-void buttonInterruptTask(void const * argument)
+/* USER CODE END Header_Button_Interrupt */
+void Button_Interrupt(void *argument)
 {
-  /* USER CODE BEGIN buttonInterruptTask */
+	uint32_t last_tick = osKernelGetTickCount();
+	    const uint32_t debounce_time = 50; // Debounce time in milliseconds
+
+	    for (;;)
+	    {
+	        // Check North-South button
+	        if (HAL_GPIO_ReadPin(PS_NS_GPIO_Port, PS_NS_Pin) == GPIO_PIN_RESET)
+	        {
+	            // Debounce check
+	        	osDelay(debounce_time);
+	            if ((osKernelGetTickCount() - last_tick) >= debounce_time)
+	            {
+	                printf("North-South button pressed!\n");
+
+	                // Create and send a message for North-South pedestrian crossing
+	                TEST = 10;
+
+	                last_tick = osKernelGetTickCount(); // Update last tick for debouncing
+	            }
+	        }
+	        // Check West-East button
+	        if (HAL_GPIO_ReadPin(PS_WE_GPIO_Port, PS_WE_Pin) == GPIO_PIN_RESET)
+	        {
+	            // Debounce check
+	        	osDelay(debounce_time);
+	            if ((osKernelGetTickCount() - last_tick) >= debounce_time)
+	            {
+	                printf("West-East button pressed!\n");
+
+	                // Create and send a message for West-East pedestrian crossing
+	                TEST =20;
+
+	                last_tick = osKernelGetTickCount(); // Update last tick for debouncing
+	            }
+	        }
+
+	        // Delay to reduce CPU usage
+	        osDelay(10);
+	    }
+}
+
+/* USER CODE BEGIN Header_WE_Crossing_Task */
+/**
+* @brief Function implementing the WE_Crossing thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_WE_Crossing_Task */
+void WE_Crossing_Task(void *argument)
+{
+  /* USER CODE BEGIN WE_Crossing_Task */
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  if (TEST == W_E)
+	  {
+		/* North-South pedestrian crossing */
+		osThreadSuspend(Traffic_controlHandle);
+
+		HAL_GPIO_WritePin(GPIOB, R_WE_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOB, G_WE_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, Y_WE_Pin, GPIO_PIN_RESET);
+
+		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
+		osDelay(5000);
+
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_SET);
+		osDelay(1000);
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		osDelay(1000);
+
+		HAL_GPIO_WritePin(PedestrainMove_WE_GPIO_Port, PedestrainMove_WE_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(PedestrainStop_WE_GPIO_Port, PedestrainStop_WE_Pin, GPIO_PIN_SET);
+		TEST = 0;
+		osThreadResume(Traffic_controlHandle);
+	  }
+
+	  osDelay(100);
   }
-  /* USER CODE END buttonInterruptTask */
+  /* USER CODE END WE_Crossing_Task */
 }
 
 /**

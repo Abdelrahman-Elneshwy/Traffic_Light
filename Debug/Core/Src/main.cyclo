@@ -1,0 +1,9 @@
+../Core/Src/main.c:112:5:main	1
+../Core/Src/main.c:212:6:SystemClock_Config	3
+../Core/Src/main.c:254:13:MX_GPIO_Init	1
+../Core/Src/main.c:318:6:Traffic_Light_Control	2
+../Core/Src/main.c:372:6:SN_Crossing_Task	2
+../Core/Src/main.c:420:6:Button_Interrupt	5
+../Core/Src/main.c:470:6:WE_Crossing_Task	2
+../Core/Src/main.c:519:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:536:6:Error_Handler	1

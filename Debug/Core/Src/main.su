@@ -1,0 +1,9 @@
+../Core/Src/main.c:112:5:main	8	static
+../Core/Src/main.c:212:6:SystemClock_Config	88	static
+../Core/Src/main.c:254:13:MX_GPIO_Init	40	static
+../Core/Src/main.c:318:6:Traffic_Light_Control	16	static
+../Core/Src/main.c:372:6:SN_Crossing_Task	16	static
+../Core/Src/main.c:420:6:Button_Interrupt	24	static
+../Core/Src/main.c:470:6:WE_Crossing_Task	16	static
+../Core/Src/main.c:519:6:HAL_TIM_PeriodElapsedCallback	16	static
+../Core/Src/main.c:536:6:Error_Handler	4	static,ignoring_inline_asm

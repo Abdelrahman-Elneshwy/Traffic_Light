@@ -65,6 +65,10 @@ void Error_Handler(void);
 #define R_SN_GPIO_Port GPIOA
 #define PS_NS_Pin GPIO_PIN_3
 #define PS_NS_GPIO_Port GPIOA
+#define PedestrainMove_SN_Pin GPIO_PIN_4
+#define PedestrainMove_SN_GPIO_Port GPIOA
+#define PedestrainStop_SN_Pin GPIO_PIN_5
+#define PedestrainStop_SN_GPIO_Port GPIOA
 #define G_WE_Pin GPIO_PIN_0
 #define G_WE_GPIO_Port GPIOB
 #define Y_WE_Pin GPIO_PIN_1
@@ -73,7 +77,13 @@ void Error_Handler(void);
 #define R_WE_GPIO_Port GPIOB
 #define PS_WE_Pin GPIO_PIN_3
 #define PS_WE_GPIO_Port GPIOB
+#define PedestrainMove_WE_Pin GPIO_PIN_4
+#define PedestrainMove_WE_GPIO_Port GPIOB
+#define PedestrainStop_WE_Pin GPIO_PIN_5
+#define PedestrainStop_WE_GPIO_Port GPIOB
 
+#define S_N		(uint16_t)10
+#define W_E		(uint16_t)20
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
